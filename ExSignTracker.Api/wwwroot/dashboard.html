@@ -1,0 +1,393 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExSign Tracking Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 20px 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+            .header h1 {
+                color: #333;
+                font-size: 24px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+                .header h1::before {
+                    content: "📧";
+                    font-size: 28px;
+                }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+            button:hover {
+                background: #5a67d8;
+            }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+            .btn-danger:hover {
+                background: #c82333;
+            }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+            .btn-success:hover {
+                background: #218838;
+            }
+
+        /* Two columns */
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 25px;
+        }
+
+        /* Left Panel */
+        .tracking-list-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+            .tracking-list-panel h3 {
+                color: #333;
+                margin-bottom: 15px;
+                font-size: 18px;
+                border-left: 4px solid #667eea;
+                padding-left: 12px;
+            }
+
+        .tracking-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1px solid #e9ecef;
+        }
+
+            .tracking-item:hover {
+                background: #e9ecef;
+                transform: translateX(5px);
+            }
+
+            .tracking-item.active {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+            }
+
+        .tracking-id {
+            font-family: monospace;
+            font-weight: 600;
+            font-size: 14px;
+            word-break: break-all;
+        }
+
+        .tracking-stats {
+            display: flex;
+            gap: 15px;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+
+        /* Right Panel */
+        .details-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+            .details-panel h3 {
+                color: #333;
+                margin-bottom: 15px;
+                font-size: 18px;
+                border-left: 4px solid #667eea;
+                padding-left: 12px;
+            }
+
+        .selected-id {
+            background: #f0f4ff;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+            .section h4 {
+                color: #555;
+                margin-bottom: 12px;
+                font-size: 16px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+        .card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+            .summary-item:last-child {
+                border-bottom: none;
+            }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 13px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .no-data {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ExSign Email Tracking Dashboard</h1>
+            <div class="controls">
+                <button onclick="refreshData()">🔄 Refresh</button>
+                <button class="btn-danger" onclick="clearAllData()">🗑️ Clear All</button>
+                <button class="btn-success" onclick="generateTestData()">🧪 Test Data</button>
+            </div>
+        </div>
+
+        <div class="dashboard-layout">
+            <!-- Left: Tracking IDs -->
+            <div class="tracking-list-panel">
+                <h3>📋 Tracking IDs</h3>
+                <div id="trackingList">
+                    <div class="no-data">Loading...</div>
+                </div>
+            </div>
+
+            <!-- Right: Details -->
+            <div class="details-panel">
+                <h3>🔍 Details</h3>
+                <div id="detailsContent">
+                    <div class="no-data">Select a tracking ID to view details</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allData = [];
+
+        async function refreshData() {
+            try {
+                const response = await fetch('/api/Stats/all-tracking-data');
+                allData = await response.json();
+                updateTrackingList();
+            } catch (error) {
+                document.getElementById('trackingList').innerHTML = '<div class="no-data">Error loading data</div>';
+            }
+        }
+
+        function updateTrackingList() {
+            const container = document.getElementById('trackingList');
+            if (!allData || allData.length === 0) {
+                container.innerHTML = '<div class="no-data">No tracking data yet</div>';
+                return;
+            }
+
+            let html = '';
+            for (const item of allData) {
+                html += `
+                        <div class="tracking-item" onclick="showDetails('${item.trackingId}')">
+                            <div class="tracking-id">📧 ${item.trackingId}</div>
+                            <div class="tracking-stats">
+                                <span>📖 Opens: ${item.opens.length}</span>
+                                <span>🔗 Clicks: ${item.clicks.length}</span>
+                            </div>
+                        </div>
+                    `;
+            }
+            container.innerHTML = html;
+        }
+
+        function showDetails(trackingId) {
+            const item = allData.find(t => t.trackingId === trackingId);
+            if (!item) return;
+
+            // Highlight selected
+            document.querySelectorAll('.tracking-item').forEach(el => {
+                el.classList.remove('active');
+                if (el.innerText.includes(trackingId)) el.classList.add('active');
+            });
+
+            // Count clicks by link type
+            const clicksByLink = {};
+            for (const click of item.clicks) {
+                const link = click.linkType;
+                clicksByLink[link] = (clicksByLink[link] || 0) + 1;
+            }
+
+            // Count opens by email client
+            const opensByClient = {};
+            for (const open of item.opens) {
+                const client = open.emailClient;
+                opensByClient[client] = (opensByClient[client] || 0) + 1;
+            }
+
+            let html = `<div class="selected-id"><strong>Tracking ID:</strong> ${item.trackingId}</div>`;
+
+            // Opens Section
+            html += `<div class="section">
+                    <h4>📖 Email Opens (${item.opens.length})</h4>
+                    <div class="card">`;
+
+            if (item.opens.length === 0) {
+                html += `<div class="no-data" style="padding: 20px;">No opens recorded</div>`;
+            } else {
+                html += `<strong>Summary by Email Client:</strong>`;
+                for (const [client, count] of Object.entries(opensByClient)) {
+                    html += `<div class="summary-item">
+                            <span>${client || 'Unknown'}</span>
+                            <span><strong>${count}</strong> time${count !== 1 ? 's' : ''}</span>
+                        </div>`;
+                }
+                html += `<br><strong>Details:</strong>`;
+                for (const open of item.opens) {
+                    const date = new Date(open.timestamp).toLocaleString();
+                    html += `<div class="detail-row">
+                            <span>📅 ${date}</span>
+                            <span>${open.emailClient || 'Unknown'} on ${open.deviceType || 'Unknown'}</span>
+                        </div>`;
+                }
+            }
+            html += `</div></div>`;
+
+            // Clicks Section
+            html += `<div class="section">
+                    <h4>🔗 Link Clicks (${item.clicks.length})</h4>
+                    <div class="card">`;
+
+            if (item.clicks.length === 0) {
+                html += `<div class="no-data" style="padding: 20px;">No clicks recorded</div>`;
+            } else {
+                html += `<strong>Summary by Link:</strong>`;
+                for (const [link, count] of Object.entries(clicksByLink)) {
+                    const icon = { 'facebook': '👍', 'twitter': '🐦', 'linkedin': '💼', 'instagram': '📸' }[link] || '🔗';
+                    html += `<div class="summary-item">
+                            <span>${icon} ${link}</span>
+                            <span><strong>${count}</strong> click${count !== 1 ? 's' : ''}</span>
+                        </div>`;
+                }
+                html += `<br><strong>Details:</strong>`;
+                for (const click of item.clicks) {
+                    const date = new Date(click.timestamp).toLocaleString();
+                    const icon = { 'facebook': '👍', 'twitter': '🐦', 'linkedin': '💼', 'instagram': '📸' }[click.linkType] || '🔗';
+                    html += `<div class="detail-row">
+                            <span>${icon} ${date}</span>
+                            <span>${click.linkType} via ${click.browser || 'Unknown'} <!--(from ${click.sourceClient || 'Unknown'})--></span>
+                        </div>`;
+                }
+            }
+            html += `</div></div>`;
+
+            document.getElementById('detailsContent').innerHTML = html;
+        }
+
+        async function clearAllData() {
+            if (confirm('Delete ALL tracking data? This cannot be undone.')) {
+                const input = prompt('Type "DELETE" to confirm:');
+                if (input === 'DELETE') {
+                    await fetch('/api/Stats/clear-all-data', { method: 'POST' });
+                    refreshData();
+                    document.getElementById('detailsContent').innerHTML = '<div class="no-data">Select a tracking ID to view details</div>';
+                }
+            }
+        }
+
+        async function generateTestData() {
+            await fetch('/api/Stats/generate-test-data', { method: 'POST' });
+            refreshData();
+        }
+
+        refreshData();
+        setInterval(refreshData, 30000);
+    </script>
+</body>
+</html>
