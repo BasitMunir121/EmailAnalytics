@@ -36,6 +36,7 @@ public class StatsController : ControllerBase
 
 		var logFile = Path.Combine(logDirectory, $"tracking_{DateTime.UtcNow:yyyyMMdd}.log");
 
+
 		var testEvents = new[]
 		{
             // TEST001
