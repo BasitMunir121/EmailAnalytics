@@ -89,4 +89,24 @@
             </ul>
         }
     </div>
+
+    <div class="section">
+        <h4>Survey Responses (@Model.Surveys.Count)</h4>
+        @if (Model.Surveys.Count == 0)
+        {
+            <p class="muted">No survey responses recorded</p>
+        }
+        else
+        {
+            <ul class="detail-list">
+                @foreach (var survey in Model.Surveys.OrderByDescending(s => s.Timestamp))
+                {
+                    <li>
+                        <span>@survey.Timestamp.ToLocalTime().ToString("g") · @survey.SurveyType · @(survey.ChoiceKey ?? survey.Score?.ToString() ?? "-")</span>
+                        <span>@(string.IsNullOrWhiteSpace(survey.Comment) ? "No comment" : survey.Comment)</span>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
 </div>

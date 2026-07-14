@@ -1,0 +1,59 @@
+@model ExSignAnalytics.Web.Controllers.FeedbackPageModel
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Thanks for your feedback</h1>
+    </div>
+</div>
+
+@if (ViewBag.Error != null)
+{
+    <div class="alert">@ViewBag.Error</div>
+}
+
+@if (ViewBag.Success != null)
+{
+    <div class="alert" style="background:#e8fff3;border-color:#b7f0d4;color:#50cd89;">@ViewBag.Success</div>
+}
+
+@if (Model.Token != Guid.Empty && string.IsNullOrEmpty(ViewBag.Error as string))
+{
+    <div class="details-panel" style="max-width:640px;">
+        <div class="details-id">
+            <strong>Your rating:</strong>
+            @if (!string.IsNullOrWhiteSpace(Model.ChoiceKey) && string.Equals(Model.SurveyType, "emoji", StringComparison.OrdinalIgnoreCase))
+            {
+                <span>@Model.ChoiceKey</span>
+            }
+            else
+            {
+                <span>@Model.Score / @(string.Equals(Model.SurveyType, "scale", StringComparison.OrdinalIgnoreCase) ? "10" : "5")</span>
+            }
+            <span class="muted"> (@Model.SurveyType)</span>
+        </div>
+
+        @if (Model.AlreadyCommented && !string.IsNullOrWhiteSpace(Model.Comment) && ViewBag.Success == null)
+        {
+            <p class="muted">You already left a comment:</p>
+            <p>@Model.Comment</p>
+        }
+        else if (ViewBag.Success == null)
+        {
+            <p class="card-desc" style="margin-bottom:1rem;">Optional: tell us more about your experience.</p>
+            <form method="post" asp-action="Index">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Token" />
+                <input type="hidden" asp-for="TrackingKey" />
+                <input type="hidden" asp-for="SurveyType" />
+                <input type="hidden" asp-for="Score" />
+                <input type="hidden" asp-for="ChoiceKey" />
+                <textarea asp-for="Comment" rows="5" maxlength="2000"
+                          style="width:100%;border:1px solid #e4e6ef;border-radius:0.475rem;padding:0.85rem 1rem;font:inherit;resize:vertical;"
+                          placeholder="Your comments (optional)"></textarea>
+                <div style="margin-top:1rem;">
+                    <button type="submit" class="btn btn-primary">Submit feedback</button>
+                </div>
+            </form>
+        }
+    </div>
+}

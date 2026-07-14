@@ -12,6 +12,7 @@ builder.Services.AddDbContext<TrackingDbContext>(options =>
 	options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<IFileTrackingService, FileTrackingService>();
+builder.Services.AddScoped<ISurveyService, SurveyService>();
 
 builder.Services.AddCors(options =>
 {

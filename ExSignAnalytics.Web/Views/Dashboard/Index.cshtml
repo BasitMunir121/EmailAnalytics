@@ -31,9 +31,10 @@ else
                 <h3>@item.TrackingId</h3>
                 <div class="card-stats">
                     Opens: <strong>@item.OpenCount</strong><br />
-                    Clicks: <strong>@item.ClickCount</strong>
+                    Clicks: <strong>@item.ClickCount</strong><br />
+                    Surveys: <strong>@item.SurveyCount</strong>
                 </div>
-                <p class="card-desc">View open and click activity for this tracking ID.</p>
+                <p class="card-desc">View open, click@(item.HasSurvey ? ", and survey" : "") activity for this tracking ID.</p>
                 <div class="card-footer">
                     <a class="btn btn-primary"
                        asp-action="Details"

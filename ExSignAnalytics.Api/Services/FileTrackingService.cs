@@ -24,8 +24,11 @@ public class TrackingResult
 public class GroupedTrackingData
 {
 	public string TrackingId { get; set; } = string.Empty;
+	public bool HasSignature { get; set; }
+	public bool HasSurvey { get; set; }
 	public List<OpenDetail> Opens { get; set; } = new();
 	public List<ClickDetail> Clicks { get; set; } = new();
+	public List<SurveyDetail> Surveys { get; set; } = new();
 }
 
 public class OpenDetail
@@ -41,6 +44,15 @@ public class ClickDetail
 	public string? LinkType { get; set; }
 	public string? Browser { get; set; }
 	public string? SourceClient { get; set; }
+}
+
+public class SurveyDetail
+{
+	public DateTime Timestamp { get; set; }
+	public string SurveyType { get; set; } = string.Empty;
+	public int? Score { get; set; }
+	public string? ChoiceKey { get; set; }
+	public string? Comment { get; set; }
 }
 
 public class FileTrackingService : IFileTrackingService
@@ -120,10 +132,13 @@ public class FileTrackingService : IFileTrackingService
 			.AsNoTracking()
 			.Include(t => t.Opens)
 			.Include(t => t.Clicks)
+			.Include(t => t.SurveyResponses)
 			.AsEnumerable()
 			.Select(t => new GroupedTrackingData
 			{
 				TrackingId = t.TrackingKey,
+				HasSignature = t.HasSignature,
+				HasSurvey = t.HasSurvey,
 				Opens = t.Opens
 					.OrderBy(o => o.Timestamp)
 					.Select(o => new OpenDetail
@@ -140,14 +155,25 @@ public class FileTrackingService : IFileTrackingService
 						LinkType = c.LinkType,
 						Browser = c.Browser,
 						SourceClient = c.SourceEmailClient
+					}).ToList(),
+				Surveys = t.SurveyResponses
+					.OrderBy(s => s.Timestamp)
+					.Select(s => new SurveyDetail
+					{
+						Timestamp = s.Timestamp,
+						SurveyType = s.SurveyType,
+						Score = s.Score,
+						ChoiceKey = s.ChoiceKey,
+						Comment = s.Comment
 					}).ToList()
 			})
-			.OrderByDescending(g => g.Opens.Count + g.Clicks.Count)
+			.OrderByDescending(g => g.Opens.Count + g.Clicks.Count + g.Surveys.Count)
 			.ToList();
 	}
 
 	public void ClearAllData()
 	{
+		_db.SurveyResponses.ExecuteDelete();
 		_db.Clicks.ExecuteDelete();
 		_db.Opens.ExecuteDelete();
 		_db.Trackings.ExecuteDelete();

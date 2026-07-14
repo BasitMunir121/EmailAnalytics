@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Survey Link Samples</title>
+  <style>
+    body { font-family: Inter, Arial, sans-serif; margin: 24px; color: #181c32; }
+    h2 { margin-top: 28px; }
+    a { margin-right: 10px; text-decoration: none; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0; }
+    .chip { display: inline-flex; align-items: center; justify-content: center; min-width: 42px; height: 42px; border-radius: 50%; background: #f5f8fa; border: 1px solid #e4e6ef; color: #181c32; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <h1>Email survey sample links</h1>
+  <p>Replace host with your Api URL. Clicking records the score and opens the feedback page.</p>
+
+  <h2>Stars (1-5)</h2>
+  <div class="row">
+    <a class="chip" href="https://localhost:7084/s/survey_demo_1?type=stars&value=1&sender=demo@example.com">1</a>
+    <a class="chip" href="https://localhost:7084/s/survey_demo_1?type=stars&value=2&sender=demo@example.com">2</a>
+    <a class="chip" href="https://localhost:7084/s/survey_demo_1?type=stars&value=3&sender=demo@example.com">3</a>
+    <a class="chip" href="https://localhost:7084/s/survey_demo_1?type=stars&value=4&sender=demo@example.com">4</a>
+    <a class="chip" href="https://localhost:7084/s/survey_demo_1?type=stars&value=5&sender=demo@example.com">5</a>
+  </div>
+
+  <h2>Scale (1-10)</h2>
+  <div class="row">
+    <a class="chip" href="https://localhost:7084/s/survey_demo_2?type=scale&value=1">1</a>
+    <a class="chip" href="https://localhost:7084/s/survey_demo_2?type=scale&value=5">5</a>
+    <a class="chip" href="https://localhost:7084/s/survey_demo_2?type=scale&value=10">10</a>
+  </div>
+
+  <h2>Emoji</h2>
+  <div class="row">
+    <a class="chip" href="https://localhost:7084/s/survey_demo_3?type=emoji&value=angry" title="angry">1</a>
+    <a class="chip" href="https://localhost:7084/s/survey_demo_3?type=emoji&value=sad" title="sad">2</a>
+    <a class="chip" href="https://localhost:7084/s/survey_demo_3?type=emoji&value=neutral" title="neutral">3</a>
+    <a class="chip" href="https://localhost:7084/s/survey_demo_3?type=emoji&value=happy" title="happy">4</a>
+    <a class="chip" href="https://localhost:7084/s/survey_demo_3?type=emoji&value=love" title="love">5</a>
+  </div>
+</body>
+</html>

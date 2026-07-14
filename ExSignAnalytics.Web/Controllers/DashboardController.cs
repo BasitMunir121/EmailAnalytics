@@ -34,9 +34,11 @@ public class DashboardController : Controller
 				{
 					TrackingId = i.TrackingId,
 					OpenCount = i.Opens?.Count ?? 0,
-					ClickCount = i.Clicks?.Count ?? 0
+					ClickCount = i.Clicks?.Count ?? 0,
+					SurveyCount = i.Surveys?.Count ?? 0,
+					HasSurvey = i.HasSurvey || (i.Surveys?.Count ?? 0) > 0
 				})
-				.OrderByDescending(i => i.OpenCount + i.ClickCount)
+				.OrderByDescending(i => i.OpenCount + i.ClickCount + i.SurveyCount)
 				.ToList();
 
 			return View(model);
@@ -71,8 +73,11 @@ public class DashboardController : Controller
 			return View(new TrackingDetailsViewModel
 			{
 				TrackingId = item.TrackingId,
+				HasSignature = item.HasSignature,
+				HasSurvey = item.HasSurvey || (item.Surveys?.Count ?? 0) > 0,
 				Opens = item.Opens ?? new(),
-				Clicks = item.Clicks ?? new()
+				Clicks = item.Clicks ?? new(),
+				Surveys = item.Surveys ?? new()
 			});
 		}
 		catch
