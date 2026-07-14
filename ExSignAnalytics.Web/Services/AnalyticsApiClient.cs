@@ -22,11 +22,4 @@ public class AnalyticsApiClient : IAnalyticsApiClient
 		response.EnsureSuccessStatusCode();
 		return await response.Content.ReadAsStringAsync(cancellationToken);
 	}
-
-	public async Task<string> GenerateTestDataAsync(CancellationToken cancellationToken = default)
-	{
-		var response = await _httpClient.PostAsync("api/Stats/generate-test-data", null, cancellationToken);
-		response.EnsureSuccessStatusCode();
-		return await response.Content.ReadAsStringAsync(cancellationToken);
-	}
 }

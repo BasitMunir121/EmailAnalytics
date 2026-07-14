@@ -1,4 +1,6 @@
+using ExSignAnalytics.Api.Data;
 using ExSignAnalytics.Api.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -6,7 +8,10 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton<IFileTrackingService, FileTrackingService>();
+builder.Services.AddDbContext<TrackingDbContext>(options =>
+	options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<IFileTrackingService, FileTrackingService>();
 
 builder.Services.AddCors(options =>
 {

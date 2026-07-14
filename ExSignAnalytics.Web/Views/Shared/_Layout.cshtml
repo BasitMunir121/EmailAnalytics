@@ -3,9 +3,45 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - ExSignAnalytics</title>
+    <title>@ViewData["Title"] - ExSign Analytics</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
-    @RenderBody()
+<div class="app-shell">
+    <header class="topbar">
+        <div class="brand">
+            <span class="brand-name">ExSign Analytics</span>
+            <span class="brand-tag">Email Signatures Analytics</span>
+        </div>
+        <div class="top-actions">
+            <span class="icon-btn" title="Notifications">N<span class="badge-dot">1</span></span>
+            <span class="icon-btn" title="Profile">U</span>
+        </div>
+    </header>
+
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <ul class="sidebar-nav">
+                    <li>
+                        <a asp-controller="Dashboard" asp-action="Index"
+                           class="@(ViewData["Nav"]?.ToString() == "Dashboard" ? "active" : null)">
+                            <span class="nav-icon">■</span> Dashboard
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </aside>
+
+        <main class="content">
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert">@TempData["Error"]</div>
+            }
+            @RenderBody()
+        </main>
+    </div>
+</div>
+@await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

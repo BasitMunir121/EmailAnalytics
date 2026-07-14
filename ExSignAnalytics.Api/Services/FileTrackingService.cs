@@ -1,5 +1,6 @@
-﻿using ExSignAnalytics.Api.Models;
-using System.Text.Json;
+﻿using ExSignAnalytics.Api.Data;
+using ExSignAnalytics.Api.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace ExSignAnalytics.Api.Services;
 
@@ -9,6 +10,8 @@ public interface IFileTrackingService
 	Task<TrackingResult> TrackClickAsync(string trackingId, string linkType, string destinationUrl, HttpRequest request, string senderEmail = "");
 	List<GroupedTrackingData> GetAllTrackingData();
 	void ClearAllData();
+	(string EmailClient, string DeviceType, string OS) ParseUserAgentForDebug(string userAgent, HttpRequest request);
+	string DetectSourceClientForDebug(HttpRequest request);
 }
 
 public class TrackingResult
@@ -42,13 +45,11 @@ public class ClickDetail
 
 public class FileTrackingService : IFileTrackingService
 {
-	private readonly string _logDirectory;
-	private static readonly object _lockObject = new();
+	private readonly TrackingDbContext _db;
 
-	public FileTrackingService()
+	public FileTrackingService(TrackingDbContext db)
 	{
-		_logDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TrackingLogs");
-		if (!Directory.Exists(_logDirectory)) Directory.CreateDirectory(_logDirectory);
+		_db = db;
 	}
 
 	public async Task<TrackingResult> TrackOpenAsync(string trackingId, HttpRequest request, string senderEmail = "")
@@ -57,21 +58,20 @@ public class FileTrackingService : IFileTrackingService
 		{
 			var userAgent = request.Headers["User-Agent"].ToString();
 			var (emailClient, deviceType, os) = ParseUserAgent(userAgent, request);
+			var tracking = await GetOrCreateTrackingAsync(trackingId, senderEmail);
 
-			var trackingEvent = new TrackingEvent
+			_db.Opens.Add(new Open
 			{
-				EmailId = trackingId,
-				EventType = "open",
+				TrackingId = tracking.Id,
 				Timestamp = DateTime.UtcNow,
 				UserAgent = userAgent,
 				IpAddress = GetClientIp(request),
 				EmailClient = emailClient,
 				DeviceType = deviceType,
-				OperatingSystem = os,
-				SenderEmail = senderEmail
-			};
+				OperatingSystem = os
+			});
+			await _db.SaveChangesAsync();
 
-			await WriteToLogFile(trackingEvent);
 			Console.WriteLine($"[OPEN] {trackingId} | Client: {emailClient} | Device: {deviceType}");
 			return new TrackingResult { Success = true };
 		}
@@ -88,24 +88,23 @@ public class FileTrackingService : IFileTrackingService
 		{
 			var userAgent = request.Headers["User-Agent"].ToString();
 			var (emailClient, deviceType, os) = ParseUserAgent(userAgent, request);
-			var sourceClient = DetectSourceClient(request); // Pass the full request, not just userAgent and referer
+			var sourceClient = DetectSourceClient(request);
+			var tracking = await GetOrCreateTrackingAsync(trackingId, senderEmail);
 
-			var trackingEvent = new TrackingEvent
+			_db.Clicks.Add(new Click
 			{
-				EmailId = trackingId,
-				EventType = "click",
+				TrackingId = tracking.Id,
 				LinkType = linkType,
 				Timestamp = DateTime.UtcNow,
 				UserAgent = userAgent,
 				IpAddress = GetClientIp(request),
-				EmailClient = emailClient,
+				Browser = emailClient,
 				SourceEmailClient = sourceClient,
 				DeviceType = deviceType,
-				OperatingSystem = os,
-				SenderEmail = senderEmail
-			};
+				OperatingSystem = os
+			});
+			await _db.SaveChangesAsync();
 
-			await WriteToLogFile(trackingEvent);
 			Console.WriteLine($"[CLICK] {trackingId} | Link: {linkType} | Browser: {emailClient} | From: {sourceClient}");
 			return new TrackingResult { Success = true, RedirectUrl = destinationUrl };
 		}
@@ -117,80 +116,75 @@ public class FileTrackingService : IFileTrackingService
 
 	public List<GroupedTrackingData> GetAllTrackingData()
 	{
-		var allEvents = new List<TrackingEvent>();
-
-		if (Directory.Exists(_logDirectory))
-		{
-			var logFiles = Directory.GetFiles(_logDirectory, "tracking_*.log");
-			foreach (var logFile in logFiles)
+		return _db.Trackings
+			.AsNoTracking()
+			.Include(t => t.Opens)
+			.Include(t => t.Clicks)
+			.AsEnumerable()
+			.Select(t => new GroupedTrackingData
 			{
-				var lines = File.ReadAllLines(logFile);
-				foreach (var line in lines)
-				{
-					try
+				TrackingId = t.TrackingKey,
+				Opens = t.Opens
+					.OrderBy(o => o.Timestamp)
+					.Select(o => new OpenDetail
 					{
-						var eventData = JsonSerializer.Deserialize<TrackingEvent>(line);
-						if (eventData != null) allEvents.Add(eventData);
-					}
-					catch { }
-				}
-			}
-		}
-
-		var result = allEvents
-			.GroupBy(e => e.EmailId)
-			.Select(g => new GroupedTrackingData
-			{
-				TrackingId = g.Key,
-				Opens = g.Where(e => e.EventType == "open").Select(o => new OpenDetail
-				{
-					Timestamp = o.Timestamp,
-					EmailClient = o.EmailClient,
-					DeviceType = o.DeviceType
-				}).ToList(),
-				Clicks = g.Where(e => e.EventType == "click").Select(c => new ClickDetail
-				{
-					Timestamp = c.Timestamp,
-					LinkType = c.LinkType,
-					Browser = c.EmailClient,
-					SourceClient = c.SourceEmailClient
-				}).ToList()
+						Timestamp = o.Timestamp,
+						EmailClient = o.EmailClient,
+						DeviceType = o.DeviceType
+					}).ToList(),
+				Clicks = t.Clicks
+					.OrderBy(c => c.Timestamp)
+					.Select(c => new ClickDetail
+					{
+						Timestamp = c.Timestamp,
+						LinkType = c.LinkType,
+						Browser = c.Browser,
+						SourceClient = c.SourceEmailClient
+					}).ToList()
 			})
 			.OrderByDescending(g => g.Opens.Count + g.Clicks.Count)
 			.ToList();
-
-		return result;
 	}
 
 	public void ClearAllData()
 	{
-		if (Directory.Exists(_logDirectory))
-		{
-			var logFiles = Directory.GetFiles(_logDirectory, "*.log");
-			foreach (var file in logFiles) File.Delete(file);
-		}
+		_db.Clicks.ExecuteDelete();
+		_db.Opens.ExecuteDelete();
+		_db.Trackings.ExecuteDelete();
 	}
 
-	// Debug method for testing User-Agent parsing
 	public (string EmailClient, string DeviceType, string OS) ParseUserAgentForDebug(string userAgent, HttpRequest request)
 	{
 		return ParseUserAgent(userAgent, request);
 	}
+
 	public string DetectSourceClientForDebug(HttpRequest request)
 	{
 		return DetectSourceClient(request);
 	}
-	private async Task WriteToLogFile(TrackingEvent trackingEvent)
-	{
-		var logFileName = $"tracking_{DateTime.UtcNow:yyyyMMdd}.log";
-		var logFilePath = Path.Combine(_logDirectory, logFileName);
-		var jsonLine = JsonSerializer.Serialize(trackingEvent);
 
-		lock (_lockObject)
+	private async Task<Tracking> GetOrCreateTrackingAsync(string trackingKey, string senderEmail)
+	{
+		var tracking = await _db.Trackings.FirstOrDefaultAsync(t => t.TrackingKey == trackingKey);
+		if (tracking != null)
 		{
-			File.AppendAllText(logFilePath, jsonLine + Environment.NewLine);
+			if (!string.IsNullOrWhiteSpace(senderEmail) && string.IsNullOrWhiteSpace(tracking.SenderEmail))
+			{
+				tracking.SenderEmail = senderEmail;
+				await _db.SaveChangesAsync();
+			}
+			return tracking;
 		}
-		await Task.CompletedTask;
+
+		tracking = new Tracking
+		{
+			TrackingKey = trackingKey,
+			SenderEmail = senderEmail ?? string.Empty,
+			CreatedAt = DateTime.UtcNow
+		};
+		_db.Trackings.Add(tracking);
+		await _db.SaveChangesAsync();
+		return tracking;
 	}
 
 	private (string EmailClient, string DeviceType, string OS) ParseUserAgent(string ua, HttpRequest? request = null)
@@ -201,10 +195,6 @@ public class FileTrackingService : IFileTrackingService
 
 		var uaLower = ua.ToLower();
 
-		// ========================================
-		// FIRST: Check for Outlook New via x-native-host header
-		// This is the most reliable way to detect Outlook New
-		// ========================================
 		if (request != null)
 		{
 			var nativeHost = request.Headers["x-native-host"].ToString();
@@ -217,9 +207,6 @@ public class FileTrackingService : IFileTrackingService
 			}
 		}
 
-		// ========================================
-		// DETECT OUTLOOK CLASSIC
-		// ========================================
 		if (uaLower.Contains("ms-office") ||
 			uaLower.Contains("msoffice") ||
 			uaLower.Contains("compatible; ms-office"))
@@ -230,9 +217,6 @@ public class FileTrackingService : IFileTrackingService
 			return (client, device, os);
 		}
 
-		// ========================================
-		// DETECT OTHER OUTLOOK VARIANTS
-		// ========================================
 		if (uaLower.Contains("outlook for mac"))
 		{
 			client = "Outlook for Mac";
@@ -257,9 +241,6 @@ public class FileTrackingService : IFileTrackingService
 			return (client, device, os);
 		}
 
-		// ========================================
-		// DETECT OTHER EMAIL CLIENTS
-		// ========================================
 		if (uaLower.Contains("gmail"))
 		{
 			client = "Gmail";
@@ -272,7 +253,6 @@ public class FileTrackingService : IFileTrackingService
 		{
 			client = "Thunderbird";
 		}
-		// DETECT BROWSERS (for clicks)
 		else if (uaLower.Contains("chrome/") && !uaLower.Contains("edg/"))
 		{
 			client = "Chrome Browser";
@@ -290,9 +270,6 @@ public class FileTrackingService : IFileTrackingService
 			client = "Edge Browser";
 		}
 
-		// ========================================
-		// DETECT DEVICE
-		// ========================================
 		if (device == "Unknown")
 		{
 			if (uaLower.Contains("iphone")) device = "iPhone";
@@ -302,9 +279,6 @@ public class FileTrackingService : IFileTrackingService
 			else if (uaLower.Contains("macintosh") || uaLower.Contains("mac os")) device = "Mac";
 		}
 
-		// ========================================
-		// DETECT OS
-		// ========================================
 		if (os == "Unknown")
 		{
 			if (uaLower.Contains("windows nt 10.0")) os = "Windows 10/11";
@@ -321,7 +295,6 @@ public class FileTrackingService : IFileTrackingService
 	{
 		if (request == null) return "Unknown";
 
-		// Method 1: Check x-native-host header (Outlook New)
 		var nativeHost = request.Headers["x-native-host"].ToString();
 		if (!string.IsNullOrEmpty(nativeHost))
 		{
@@ -329,25 +302,21 @@ public class FileTrackingService : IFileTrackingService
 				return "Outlook New (Microsoft 365)";
 		}
 
-		// Method 2: Check User-Agent
 		var userAgent = request.Headers["User-Agent"].ToString();
 		if (string.IsNullOrEmpty(userAgent)) return "Unknown";
 
 		var ua = userAgent.ToLower();
 
-		// Outlook Classic
 		if (ua.Contains("ms-office") || ua.Contains("msoffice") || ua.Contains("compatible; ms-office"))
 		{
 			return "Outlook Classic";
 		}
 
-		// Outlook for Mac
 		if (ua.Contains("outlook for mac"))
 		{
 			return "Outlook for Mac";
 		}
 
-		// Outlook Mobile
 		if (ua.Contains("outlook-ios"))
 		{
 			return "Outlook Mobile (iOS)";
@@ -357,7 +326,6 @@ public class FileTrackingService : IFileTrackingService
 			return "Outlook Mobile (Android)";
 		}
 
-		// Method 3: Check Referer for webmail
 		var referer = request.Headers["Referer"].ToString();
 		if (!string.IsNullOrEmpty(referer))
 		{

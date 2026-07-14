@@ -1,0 +1,92 @@
+@model ExSignAnalytics.Web.Models.TrackingDetailsViewModel
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Tracking Details</h1>
+        @{
+            ViewData["BreadcrumbParent"] = "Dashboard";
+            ViewData["BreadcrumbCurrent"] = "Tracking Details";
+        }
+        <partial name="_Breadcrumb" />
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-ghost" asp-action="Index">Back to Dashboard</a>
+    </div>
+</div>
+
+@if (ViewBag.Error != null)
+{
+    <div class="alert">@ViewBag.Error</div>
+}
+
+<div class="details-panel">
+    <div class="details-id"><strong>Tracking ID:</strong> @Model.TrackingId</div>
+
+    <div class="section">
+        <h4>Email Opens (@Model.Opens.Count)</h4>
+        @if (Model.Opens.Count == 0)
+        {
+            <p class="muted">No opens recorded</p>
+        }
+        else
+        {
+            var opensByClient = Model.Opens
+                .GroupBy(o => string.IsNullOrWhiteSpace(o.EmailClient) ? "Unknown" : o.EmailClient!)
+                .OrderByDescending(g => g.Count());
+
+            <ul class="meta-list">
+                @foreach (var group in opensByClient)
+                {
+                    <li>
+                        <span>@group.Key</span>
+                        <strong>@group.Count()</strong>
+                    </li>
+                }
+            </ul>
+
+            <ul class="detail-list" style="margin-top: 12px;">
+                @foreach (var open in Model.Opens.OrderByDescending(o => o.Timestamp))
+                {
+                    <li>
+                        <span>@open.Timestamp.ToLocalTime().ToString("g")</span>
+                        <span>@(open.EmailClient ?? "Unknown") on @(open.DeviceType ?? "Unknown")</span>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+
+    <div class="section">
+        <h4>Link Clicks (@Model.Clicks.Count)</h4>
+        @if (Model.Clicks.Count == 0)
+        {
+            <p class="muted">No clicks recorded</p>
+        }
+        else
+        {
+            var clicksByLink = Model.Clicks
+                .GroupBy(c => string.IsNullOrWhiteSpace(c.LinkType) ? "unknown" : c.LinkType!)
+                .OrderByDescending(g => g.Count());
+
+            <ul class="meta-list">
+                @foreach (var group in clicksByLink)
+                {
+                    <li>
+                        <span>@group.Key</span>
+                        <strong>@group.Count()</strong>
+                    </li>
+                }
+            </ul>
+
+            <ul class="detail-list" style="margin-top: 12px;">
+                @foreach (var click in Model.Clicks.OrderByDescending(c => c.Timestamp))
+                {
+                    <li>
+                        <span>@click.Timestamp.ToLocalTime().ToString("g")</span>
+                        <span>@(click.LinkType ?? "link") via @(click.Browser ?? "Unknown")</span>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</div>

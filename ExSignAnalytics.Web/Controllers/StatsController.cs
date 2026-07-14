@@ -40,18 +40,4 @@ public class StatsController : ControllerBase
 			return StatusCode(StatusCodes.Status502BadGateway, new { error = "Failed to reach Api", detail = ex.Message });
 		}
 	}
-
-	[HttpPost("generate-test-data")]
-	public async Task<IActionResult> GenerateTestData(CancellationToken cancellationToken)
-	{
-		try
-		{
-			var json = await _apiClient.GenerateTestDataAsync(cancellationToken);
-			return Content(json, "application/json");
-		}
-		catch (Exception ex)
-		{
-			return StatusCode(StatusCodes.Status502BadGateway, new { error = "Failed to reach Api", detail = ex.Message });
-		}
-	}
 }

@@ -45,8 +45,7 @@ public class TrackingController : ControllerBase
 
 		try
 		{
-			var service = new FileTrackingService();
-			var result = service.ParseUserAgentForDebug(userAgent, Request);
+			var result = _trackingService.ParseUserAgentForDebug(userAgent, Request);
 			detectedClient = result.EmailClient;
 			detectedDevice = result.DeviceType;
 			detectedOS = result.OS;
@@ -74,8 +73,7 @@ public class TrackingController : ControllerBase
 		string detectedSource = "Unknown";
 		try
 		{
-			var service = new FileTrackingService();
-			detectedSource = service.DetectSourceClientForDebug(Request);
+			detectedSource = _trackingService.DetectSourceClientForDebug(Request);
 		}
 		catch (Exception ex)
 		{
