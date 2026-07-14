@@ -3,17 +3,12 @@
 <div class="page-header">
     <div>
         <h1 class="page-title">Dashboard</h1>
-        @{
-            ViewData["BreadcrumbParent"] = "Analytics";
-            ViewData["BreadcrumbCurrent"] = "Dashboard";
-        }
-        <partial name="_Breadcrumb" />
     </div>
     <div class="page-actions">
-        <a class="btn btn-ghost" asp-action="Index">Refresh</a>
+        <a class="btn btn-primary" asp-action="Index">Refresh</a>
         <form asp-action="ClearAll" method="post" onsubmit="return confirm('Delete ALL tracking data?');">
             @Html.AntiForgeryToken()
-            <button type="submit" class="btn btn-danger">Clear All</button>
+            <button type="submit" class="btn btn-ghost">Clear All</button>
         </form>
     </div>
 </div>
@@ -34,11 +29,11 @@ else
         {
             <div class="report-card">
                 <h3>@item.TrackingId</h3>
-                <p>
+                <div class="card-stats">
                     Opens: <strong>@item.OpenCount</strong><br />
-                    Clicks: <strong>@item.ClickCount</strong><br />
-                    View open and click activity for this tracking ID.
-                </p>
+                    Clicks: <strong>@item.ClickCount</strong>
+                </div>
+                <p class="card-desc">View open and click activity for this tracking ID.</p>
                 <div class="card-footer">
                     <a class="btn btn-primary"
                        asp-action="Details"
