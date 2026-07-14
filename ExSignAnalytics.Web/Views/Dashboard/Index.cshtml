@@ -1,4 +1,7 @@
-﻿<!DOCTYPE html>
+@{
+	Layout = null;
+}
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -23,7 +26,6 @@
             margin: 0 auto;
         }
 
-        /* Header */
         .header {
             background: white;
             border-radius: 15px;
@@ -87,14 +89,12 @@
                 background: #218838;
             }
 
-        /* Two columns */
         .dashboard-layout {
             display: grid;
             grid-template-columns: 1fr 1.5fr;
             gap: 25px;
         }
 
-        /* Left Panel */
         .tracking-list-panel {
             background: white;
             border-radius: 15px;
@@ -145,7 +145,6 @@
             font-size: 12px;
         }
 
-        /* Right Panel */
         .details-panel {
             background: white;
             border-radius: 15px;
@@ -215,7 +214,7 @@
             padding: 40px;
         }
 
-        @media (max-width: 768px) {
+        @@media (max-width: 768px) {
             .dashboard-layout {
                 grid-template-columns: 1fr;
             }
@@ -227,14 +226,13 @@
         <div class="header">
             <h1>ExSignAnalytics Dashboard</h1>
             <div class="controls">
-                <button onclick="refreshData()">🔄 Refresh</button>
-                <button class="btn-danger" onclick="clearAllData()">🗑️ Clear All</button>
-                <button class="btn-success" onclick="generateTestData()">🧪 Test Data</button>
+                <button type="button" onclick="refreshData()">🔄 Refresh</button>
+                <button type="button" class="btn-danger" onclick="clearAllData()">🗑️ Clear All</button>
+                <button type="button" class="btn-success" onclick="generateTestData()">🧪 Test Data</button>
             </div>
         </div>
 
         <div class="dashboard-layout">
-            <!-- Left: Tracking IDs -->
             <div class="tracking-list-panel">
                 <h3>📋 Tracking IDs</h3>
                 <div id="trackingList">
@@ -242,7 +240,6 @@
                 </div>
             </div>
 
-            <!-- Right: Details -->
             <div class="details-panel">
                 <h3>🔍 Details</h3>
                 <div id="detailsContent">
@@ -258,6 +255,7 @@
         async function refreshData() {
             try {
                 const response = await fetch('/api/Stats/all-tracking-data');
+                if (!response.ok) throw new Error('Request failed');
                 allData = await response.json();
                 updateTrackingList();
             } catch (error) {
@@ -291,20 +289,17 @@
             const item = allData.find(t => t.trackingId === trackingId);
             if (!item) return;
 
-            // Highlight selected
             document.querySelectorAll('.tracking-item').forEach(el => {
                 el.classList.remove('active');
                 if (el.innerText.includes(trackingId)) el.classList.add('active');
             });
 
-            // Count clicks by link type
             const clicksByLink = {};
             for (const click of item.clicks) {
                 const link = click.linkType;
                 clicksByLink[link] = (clicksByLink[link] || 0) + 1;
             }
 
-            // Count opens by email client
             const opensByClient = {};
             for (const open of item.opens) {
                 const client = open.emailClient;
@@ -313,7 +308,6 @@
 
             let html = `<div class="selected-id"><strong>Tracking ID:</strong> ${item.trackingId}</div>`;
 
-            // Opens Section
             html += `<div class="section">
                     <h4>📖 Email Opens (${item.opens.length})</h4>
                     <div class="card">`;
@@ -339,7 +333,6 @@
             }
             html += `</div></div>`;
 
-            // Clicks Section
             html += `<div class="section">
                     <h4>🔗 Link Clicks (${item.clicks.length})</h4>
                     <div class="card">`;
@@ -361,7 +354,7 @@
                     const icon = { 'facebook': '👍', 'twitter': '🐦', 'linkedin': '💼', 'instagram': '📸' }[click.linkType] || '🔗';
                     html += `<div class="detail-row">
                             <span>${icon} ${date}</span>
-                            <span>${click.linkType} via ${click.browser || 'Unknown'} <!--(from ${click.sourceClient || 'Unknown'})--></span>
+                            <span>${click.linkType} via ${click.browser || 'Unknown'}</span>
                         </div>`;
                 }
             }
