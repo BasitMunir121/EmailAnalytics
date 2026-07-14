@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace ExSignTracker.Api.Controllers
+namespace ExSignAnalytics.Api.Controllers
 {
     [ApiController]
     [Route("[controller]")]

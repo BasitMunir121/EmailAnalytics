@@ -1,7 +1,7 @@
-﻿using ExSignTracker.Api.Models;
+﻿using ExSignAnalytics.Api.Models;
 using System.Text.Json;
 
-namespace ExSignTracker.Api.Services;
+namespace ExSignAnalytics.Api.Services;
 
 public interface IFileTrackingService
 {

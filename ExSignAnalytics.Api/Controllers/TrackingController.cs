@@ -1,7 +1,7 @@
-﻿using ExSignTracker.Api.Services;
+﻿using ExSignAnalytics.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ExSignTracker.Api.Controllers;
+namespace ExSignAnalytics.Api.Controllers;
 
 [ApiController]
 public class TrackingController : ControllerBase

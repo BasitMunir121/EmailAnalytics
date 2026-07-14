@@ -1,4 +1,4 @@
-using ExSignTracker.Api.Services;
+using ExSignAnalytics.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 

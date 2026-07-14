@@ -1,4 +1,4 @@
-namespace ExSignTracker.Api
+namespace ExSignAnalytics.Api
 {
     public class WeatherForecast
     {

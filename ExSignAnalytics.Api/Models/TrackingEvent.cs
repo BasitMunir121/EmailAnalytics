@@ -1,4 +1,4 @@
-﻿namespace ExSignTracker.Api.Models;
+﻿namespace ExSignAnalytics.Api.Models;
 
 public class TrackingEvent
 {
