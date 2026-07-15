@@ -15,9 +15,23 @@ public class TrackingDbContext : DbContext
 	public DbSet<Click> Clicks => Set<Click>();
 	public DbSet<Survey> Surveys => Set<Survey>();
 	public DbSet<SurveyResponse> SurveyResponses => Set<SurveyResponse>();
+	public DbSet<EmailSignature> EmailSignatures => Set<EmailSignature>();
 
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
 	{
+		var emailSignature = modelBuilder.Entity<EmailSignature>();
+		emailSignature.ToTable("EmailSignatures");
+		emailSignature.HasKey(s => s.Id);
+		emailSignature.Property(s => s.Id).ValueGeneratedOnAdd();
+		emailSignature.Property(s => s.Name).HasMaxLength(200).IsRequired();
+		emailSignature.Property(s => s.TrackingKey).HasMaxLength(200).IsRequired();
+		emailSignature.Property(s => s.HtmlBody).IsRequired();
+		emailSignature.Property(s => s.CreatedAt).HasColumnType("datetime2(3)").IsRequired();
+		emailSignature.Property(s => s.UpdatedAt).HasColumnType("datetime2(3)").IsRequired();
+		emailSignature.HasIndex(s => s.TrackingKey).IsUnique().HasDatabaseName("UQ_EmailSignatures_TrackingKey");
+		emailSignature.HasIndex(s => s.Name).HasDatabaseName("IX_EmailSignatures_Name");
+		emailSignature.HasIndex(s => s.CreatedAt).HasDatabaseName("IX_EmailSignatures_CreatedAt");
+
 		var survey = modelBuilder.Entity<Survey>();
 		survey.ToTable("Surveys");
 		survey.HasKey(s => s.Id);

@@ -1,0 +1,166 @@
+@model ExSignAnalytics.Web.Controllers.SignatureEditModel
+@{
+    var apiBase = ViewBag.ApiBaseUrl as string ?? "https://localhost:7084";
+    var isNew = Model.Id == 0;
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">@(isNew ? "New Signature" : "Edit Signature")</h1>
+        @{
+            ViewData["BreadcrumbParent"] = "Signatures";
+            ViewData["BreadcrumbCurrent"] = isNew ? "New Signature" : "Edit Signature";
+        }
+        <partial name="_Breadcrumb" />
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-ghost" asp-action="Index">Back</a>
+    </div>
+</div>
+
+@if (ViewBag.Error != null)
+{
+    <div class="alert">@ViewBag.Error</div>
+}
+
+<form asp-action="Save" method="post" class="form-card" id="signatureForm">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+
+    <div class="form-grid">
+        <div class="form-group">
+            <label asp-for="Name">Signature Name</label>
+            <input asp-for="Name" class="form-control" placeholder="e.g. Sales Team Signature" />
+            <span asp-validation-for="Name" class="field-error"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="TrackingKey">Tracking Key</label>
+            <input asp-for="TrackingKey" class="form-control" placeholder="Unique tracking id" />
+            <div class="form-hint">Used in open pixel and tracked links.</div>
+        </div>
+    </div>
+
+    <div class="form-checks">
+        <label class="check-label">
+            <input asp-for="EnableTracking" type="checkbox" />
+            <span>Enable tracking (auto-append open pixel on save)</span>
+        </label>
+        <label class="check-label">
+            <input asp-for="IsEnabled" type="checkbox" />
+            <span>Enabled</span>
+        </label>
+    </div>
+
+    <div class="tracking-toolbar">
+        <span class="toolbar-label">Insert tracking:</span>
+        <button type="button" class="btn btn-ghost" id="btnInsertPixel">Add Open Pixel</button>
+        <button type="button" class="btn btn-ghost" id="btnInsertLink">Add Tracked Link</button>
+        <button type="button" class="btn btn-ghost" id="btnInsertSurveyStars">Add Stars Survey</button>
+        <button type="button" class="btn btn-ghost" id="btnInsertSurveyEmoji">Add Emoji Survey</button>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="HtmlBody">Signature HTML</label>
+        <textarea asp-for="HtmlBody" id="HtmlBody" rows="12"></textarea>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">@(isNew ? "Create Signature" : "Save Changes")</button>
+    </div>
+</form>
+
+@section Scripts {
+<script src="~/lib/tinymce/tinymce.min.js" asp-append-version="true"></script>
+<script>
+    const apiBase = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(apiBase));
+    const tinymceBase = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Url.Content("~/lib/tinymce")));
+
+    function currentTrackingKey() {
+        return document.getElementById('TrackingKey').value.trim() || 'tracking_key';
+    }
+
+    function editorOrAlert() {
+        const editor = tinymce.get('HtmlBody') || tinymce.activeEditor;
+        if (!editor) {
+            alert('Editor is still loading. Please wait a moment and try again.');
+            return null;
+        }
+        return editor;
+    }
+
+    if (typeof tinymce === 'undefined') {
+        console.error('TinyMCE script did not load from ' + tinymceBase);
+        alert('Rich text editor failed to load.');
+    } else {
+    tinymce.init({
+        selector: '#HtmlBody',
+        base_url: tinymceBase,
+        suffix: '.min',
+        height: 420,
+        menubar: false,
+        plugins: 'link lists code table image',
+        toolbar: 'undo redo | styles | bold italic underline | alignleft aligncenter alignright | bullist numlist | link image | code',
+        content_style: 'body { font-family: Inter, Arial, sans-serif; font-size: 14px; }',
+        branding: false,
+        promotion: false,
+        convert_urls: false,
+        relative_urls: false,
+        remove_script_host: false
+    }).then(function () {
+        document.getElementById('signatureForm').addEventListener('submit', function () {
+            tinymce.triggerSave();
+        });
+    }).catch(function (err) {
+        console.error('TinyMCE failed to initialize', err);
+        alert('Rich text editor failed to load. You can still edit the HTML in the textarea.');
+    });
+    }
+
+    document.getElementById('btnInsertPixel').addEventListener('click', function () {
+        const editor = editorOrAlert();
+        if (!editor) return;
+        const key = currentTrackingKey();
+        const html = '<img src="' + apiBase + '/t/' + key + '.gif?sender={{Email}}" width="1" height="1" style="display:none!important;width:1px;height:1px;" alt="" />';
+        editor.insertContent(html);
+    });
+
+    document.getElementById('btnInsertLink').addEventListener('click', function () {
+        const editor = editorOrAlert();
+        if (!editor) return;
+        const key = currentTrackingKey();
+        const url = prompt('Destination URL', 'https://example.com');
+        if (!url) return;
+        const linkType = prompt('Link type (e.g. website, linkedin, facebook)', 'website') || 'website';
+        const label = prompt('Link text', 'Visit website') || 'Visit website';
+        const tracked = apiBase + '/r/' + key + '/' + encodeURIComponent(linkType) + '?url=' + encodeURIComponent(url) + '&sender={{Email}}';
+        editor.insertContent('<a href="' + tracked + '">' + label + '</a>');
+    });
+
+    document.getElementById('btnInsertSurveyStars').addEventListener('click', function () {
+        const editor = editorOrAlert();
+        if (!editor) return;
+        const key = currentTrackingKey();
+        let html = '<p><strong>Rate us:</strong></p><p>';
+        for (let i = 1; i <= 5; i++) {
+            html += '<a href="' + apiBase + '/s/' + key + '?type=stars&value=' + i + '&sender={{Email}}" style="text-decoration:none;font-size:22px;color:#98a2b3;margin-right:6px;">★</a>';
+        }
+        html += '</p>';
+        editor.insertContent(html);
+    });
+
+    document.getElementById('btnInsertSurveyEmoji').addEventListener('click', function () {
+        const editor = editorOrAlert();
+        if (!editor) return;
+        const key = currentTrackingKey();
+        const items = [
+            ['angry', '😠'], ['sad', '🙁'], ['neutral', '😐'], ['happy', '🙂'], ['love', '😄']
+        ];
+        let html = '<p><strong>How was your experience?</strong></p><p>';
+        for (const [value, emoji] of items) {
+            html += '<a href="' + apiBase + '/s/' + key + '?type=emoji&value=' + value + '&sender={{Email}}" style="text-decoration:none;font-size:22px;margin-right:8px;">' + emoji + '</a>';
+        }
+        html += '</p>';
+        editor.insertContent(html);
+    });
+</script>
+}

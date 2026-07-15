@@ -13,6 +13,7 @@ builder.Services.AddDbContext<TrackingDbContext>(options =>
 
 builder.Services.AddScoped<IFileTrackingService, FileTrackingService>();
 builder.Services.AddScoped<ISurveyService, SurveyService>();
+builder.Services.AddScoped<ISignatureService, SignatureService>();
 
 builder.Services.AddCors(options =>
 {

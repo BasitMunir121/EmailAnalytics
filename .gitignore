@@ -9,3 +9,6 @@ obj/
 
 # Rider
 .idea/
+
+# Node
+**/node_modules/

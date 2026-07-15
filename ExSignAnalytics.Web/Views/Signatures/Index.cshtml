@@ -1,0 +1,89 @@
+@model List<ExSignAnalytics.Web.Services.SignatureInfo>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Manage Signatures</h1>
+        @{
+            ViewData["BreadcrumbParent"] = "Signatures";
+            ViewData["BreadcrumbCurrent"] = "Manage Signatures";
+        }
+        <partial name="_Breadcrumb" />
+    </div>
+</div>
+
+@if (ViewBag.Error != null)
+{
+    <div class="alert">@ViewBag.Error</div>
+}
+
+<div class="table-card">
+    <div class="table-card-header">
+        <h3>Signatures</h3>
+        <a class="btn btn-primary" asp-action="Create">+ New Signature</a>
+    </div>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Signature Name</th>
+                    <th>Tracking Key</th>
+                    <th>Created Date</th>
+                    <th>Enable Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            @if (Model == null || Model.Count == 0)
+            {
+                <tr>
+                    <td colspan="5" class="table-empty">No signatures yet. Click + New Signature to create one.</td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>
+                            <div class="table-primary-cell">
+                                <span class="table-avatar">@(string.IsNullOrEmpty(item.Name) ? "?" : item.Name.Substring(0, 1).ToUpperInvariant())</span>
+                                <div>
+                                    <div class="table-name">@item.Name</div>
+                                    <div class="table-sub">Tracking: @(item.EnableTracking ? "On" : "Off")</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><code>@item.TrackingKey</code></td>
+                        <td>@item.CreatedAt.ToLocalTime().ToString("dd-MMM-yyyy")</td>
+                        <td>
+                            <form asp-action="Toggle" method="post" class="inline-form">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@item.Id" />
+                                <input type="hidden" name="isEnabled" value="@(!item.IsEnabled)" />
+                                <button type="submit" class="toggle @(item.IsEnabled ? "on" : "off")" title="Toggle enabled">
+                                    <span class="toggle-knob"></span>
+                                </button>
+                            </form>
+                        </td>
+                        <td>
+                            <div class="action-btns">
+                                <a class="action-btn" asp-action="Edit" asp-route-id="@item.Id" title="Edit">✎</a>
+                                <form asp-action="Delete" method="post" onsubmit="return confirm('Delete this signature?');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <button type="submit" class="action-btn danger" title="Delete">⋯</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="table-footer">
+        <span>Showing rows 1 to @(Model?.Count ?? 0) of @(Model?.Count ?? 0)</span>
+    </div>
+</div>
